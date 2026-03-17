@@ -4,8 +4,8 @@ import pandas as pd
 import yfinance as yf
 
 # Pull credentials securely from the GitHub vault
-TELEGRAM_BOT_TOKEN = os.environ.get('8742193604:AAFOFUr5qBgJYj-q9OpaqOcLxum0sk0TLA0')
-TELEGRAM_CHAT_ID = os.environ.get('8334826606')
+TELEGRAM_BOT_TOKEN = ('8742193604:AAFOFUr5qBgJYj-q9OpaqOcLxum0sk0TLA0')
+TELEGRAM_CHAT_ID = ('8334826606')
 
 CUSTOM_TICKERS = ['SNAP', 'TSM', '005930.KS', 'AAPL']
 
