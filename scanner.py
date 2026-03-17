@@ -39,11 +39,21 @@ def run_morning_report():
     report.append("📊 **Current Performance**")
     for ticker, name in WATCHLIST_A.items():
         w1, m1, y1, price = get_performance(ticker)
-        # Handle LSE pricing (Pence vs Pounds)
-        display_price = f"£{price/100:.2f}" if ".L" in ticker else f"${price:.2f}"
+        
+        # --- FIXED CURRENCY LOGIC ---
+        if ticker in ['SGLN.L', 'SSLN.L']:
+            # These are in Pence (GBX), so divide by 100
+            display_price = f"£{price/100:.2f}"
+        elif ticker == 'VWRP.L':
+            # VWRP is already in Pounds (£) on Yahoo
+            display_price = f"£{price:.2f}"
+        else:
+            # Everything else (like Google) is USD ($)
+            display_price = f"${price:.2f}"
+            
         report.append(f"*{name}*: {display_price}\n1W: {w1} | 1M: {m1} | 1Y: {y1}\n")
     
-    report.append("\n📰 **Market News Digest**")
+    # ... rest of your news code ...
     news_links = []
     for t_str in ['GOOGL', 'IBM', 'AAPL', 'MSFT']:
         try:
