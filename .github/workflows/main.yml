@@ -2,15 +2,9 @@ name: Financial Intelligence Bot
 
 on:
   schedule:
-    # 1. Morning Briefing: 7:45 AM UK Time, Mon-Fri
     - cron: '45 7 * * 1-5'
-    
-    # 2. Volatility Sniper: Every 5 mins, 24 hours, Mon-Fri
-    # Note: GitHub may delay these slightly depending on server load
     - cron: '*/5 * * * 1-5'
-  
-  # Allows you to click a button in GitHub to run it manually for testing
-  workflow_dispatch:
+  workflow_dispatch: # This is you clicking the "Run" button
 
 jobs:
   run-market-logic:
@@ -28,16 +22,15 @@ jobs:
         run: pip install yfinance pandas requests
 
       - name: Determine and Run Mode
-        # This logic checks WHICH cron triggered the run
         run: |
-          if [ "${{ github.event.schedule }}" == "45 7 * * 1-5" ]; then
-            echo "Running Morning Briefing..."
+          # The fix is here: we check for the schedule OR a manual trigger
+          if [[ "${{ github.event.schedule }}" == "45 7 * * 1-5" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Running Morning Report..."
             python scanner.py morning
           else
             echo "Running Volatility Sniper..."
             python scanner.py sniper
           fi
         env:
-          # Keep your secrets safe in the GitHub Secrets vault!
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
