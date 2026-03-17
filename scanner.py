@@ -1,7 +1,7 @@
 import yfinance as yf
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import sys
 
 # --- CONFIG ---
@@ -17,14 +17,12 @@ WATCHLIST_B = {
 
 def send_msg(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "Markdown"})
+    requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "Markdown", "disable_web_page_preview": True})
 
 def get_performance(ticker_str):
-    """Calculates performance against dynamic past windows (1W, 1M, 1Y)."""
     t = yf.Ticker(ticker_str)
     hist = t.history(period="1y")
     if hist.empty: return "N/A", "N/A", "N/A", 0
-    
     curr = hist['Close'].iloc[-1]
     
     def calc_change(past_val):
@@ -34,51 +32,57 @@ def get_performance(ticker_str):
     w1 = calc_change(hist['Close'].iloc[-5]) if len(hist) > 5 else "N/A"
     m1 = calc_change(hist['Close'].iloc[-21]) if len(hist) > 21 else "N/A"
     y1 = calc_change(hist['Close'].iloc[0])
-    
     return w1, m1, y1, curr
 
 def run_morning_report():
     report = ["🌅 **MORNING BRIEFING & NEWS**\n"]
-    
-    # 1. Market Data
-    report.append("📊 **Your Holdings**")
+    report.append("📊 **Current Performance**")
     for ticker, name in WATCHLIST_A.items():
         w1, m1, y1, price = get_performance(ticker)
-        report.append(f"*{name}* ({ticker}): ${price:.2f}\n1W: {w1} | 1M: {m1} | 1Y: {y1}\n")
+        # Handle LSE pricing (Pence vs Pounds)
+        display_price = f"£{price/100:.2f}" if ".L" in ticker else f"${price:.2f}"
+        report.append(f"*{name}*: {display_price}\n1W: {w1} | 1M: {m1} | 1Y: {y1}\n")
     
-    # 2. News Digest (Global Finance & Specific Holdings)
     report.append("\n📰 **Market News Digest**")
-    news_items = []
-    # Check Google and IBM specifically + broad market
+    news_links = []
     for t_str in ['GOOGL', 'IBM', 'AAPL', 'MSFT']:
-        t = yf.Ticker(t_str)
-        for n in t.news[:2]: # Top 2 stories per major ticker
-            news_items.append(f"• [{n['title']}]({n['link']})")
+        try:
+            stories = yf.Ticker(t_str).news
+            for n in stories[:2]:
+                title = n.get('title') or n.get('headline')
+                link = n.get('link')
+                if title and link:
+                    news_links.append(f"• [{title}]({link})")
+        except: continue
     
-    report.append("\n".join(set(news_items[:8]))) # Limit to top 8 unique stories
+    report.append("\n".join(list(set(news_links))[:8]))
     send_msg("\n".join(report))
 
+def check_commands():
+    """Checks for /status command"""
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
+        data = requests.get(url).json()
+        if data.get("result"):
+            last_msg = data["result"][-1].get("message", {}).get("text", "")
+            if last_msg == "/status":
+                send_msg(f"✅ **E14 Bot Online**\nTime: {datetime.now().strftime('%H:%M:%S')}\nMonitoring Watchlist B...")
+    except: pass
+
 def run_volatility_sniper():
-    """Checks for 2-10% moves within the last 10 minutes."""
+    check_commands()
     all_tickers = {**WATCHLIST_A, **WATCHLIST_B}
     for ticker, name in all_tickers.items():
         try:
-            # Fetch 1-minute data for the last 30 mins
             t = yf.Ticker(ticker)
             hist = t.history(interval="1m", period="30m")
             if len(hist) < 11: continue
-            
-            now_price = hist['Close'].iloc[-1]
-            ten_min_ago = hist['Close'].iloc[-11]
-            
-            change = ((now_price - ten_min_ago) / ten_min_ago) * 100
+            now, then = hist['Close'].iloc[-1], hist['Close'].iloc[-11]
+            change = ((now - then) / then) * 100
             
             if 2.0 <= abs(change) <= 10.0:
                 w1, m1, y1, _ = get_performance(ticker)
-                msg = (f"🚨 **FLASH MOVE ALERT**\n*{name}* moved {change:+.1f}% in 10 mins!\n\n"
-                       f"💰 Current: ${now_price:.2f}\n"
-                       f"📅 Context: 1W: {w1} | 1M: {m1} | 1Y: {y1}")
-                send_msg(msg)
+                send_msg(f"🚨 **FLASH MOVE**\n*{name}* moved {change:+.1f}% in 10 mins!\nContext: 1W: {w1} | 1M: {m1} | 1Y: {y1}")
         except: continue
 
 if __name__ == "__main__":
