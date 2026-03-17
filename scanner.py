@@ -1,89 +1,89 @@
+import yfinance as yf
 import requests
 import pandas as pd
-import yfinance as yf
-import time
-import os
+from datetime import datetime, timedelta
+import sys
 
-# Put your actual token and ID here (keep the quotes!)
-TELEGRAM_BOT_TOKEN = '8742193604:AAFOFUr5qBgJYj-q9OpaqOcLxum0sk0TLA0'
+# --- CONFIG ---
+TELEGRAM_BOT_TOKEN = '8742193604:AAFOFUr5qBgJYj-q9OpaqOcLxum0sk0TLA0' 
 TELEGRAM_CHAT_ID = '8334826606'
 
-CUSTOM_TICKERS = ['SNAP', 'TSM', '005930.KS', 'AAPL']
+WATCHLIST_A = {'GOOGL': 'Google', 'VWRP.L': 'All-World', 'SGLN.L': 'Gold', 'SSLN.L': 'Silver'}
+WATCHLIST_B = {
+    'AAPL': 'Apple', 'MSFT': 'Microsoft', 'NVDA': 'Nvidia', 'AMZN': 'Amazon', 
+    'META': 'Meta', 'TSLA': 'Tesla', 'TSM': 'TSMC', '005930.KS': 'Samsung', 
+    'BABA': 'Alibaba', 'IBM': 'IBM', 'RACE': 'Ferrari'
+}
 
-def send_telegram_msg(text):
+def send_msg(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    chunks = [text[i:i+4000] for i in range(0, len(text), 4000)]
-    for chunk in chunks:
-        requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": chunk, "parse_mode": "Markdown"})
+    requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "Markdown"})
 
-def get_pct(current, past):
-    if past == 0 or pd.isna(past): return "N/A"
-    change = ((current - past) / past) * 100
-    icon = "🟢" if change >= 0 else "🔴"
-    return f"{icon}{change:+.1f}%"
-
-def run_market_analytics():
-    send_telegram_msg("🚀 **Analytics Engine Starting:** Scrapping S&P 500 & FTSE 350...")
+def get_performance(ticker_str):
+    """Calculates performance against dynamic past windows (1W, 1M, 1Y)."""
+    t = yf.Ticker(ticker_str)
+    hist = t.history(period="1y")
+    if hist.empty: return "N/A", "N/A", "N/A", 0
     
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36'}
+    curr = hist['Close'].iloc[-1]
     
-    try:
-        html_sp500 = requests.get('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies', headers=headers).text
-        sp_df = pd.read_html(html_sp500)[0]
-        sp_map = dict(zip([t.replace('.', '-') for t in sp_df['Symbol']], sp_df['Security']))
+    def calc_change(past_val):
+        change = ((curr - past_val) / past_val) * 100
+        return f"{'🟢' if change >= 0 else '🔴'}{change:+.1f}%"
 
-        html_ftse100 = requests.get('https://en.wikipedia.org/wiki/FTSE_100_Index', headers=headers).text
-        f1_df = pd.read_html(html_ftse100, match='Ticker')[0]
-        f1_map = dict(zip([f"{t}.L" for t in f1_df['Ticker']], f1_df['Company']))
-
-        html_ftse250 = requests.get('https://en.wikipedia.org/wiki/FTSE_250_Index', headers=headers).text
-        f2_df = pd.read_html(html_ftse250, match='Ticker')[0]
-        f2_map = dict(zip([f"{t}.L" for t in f2_df['Ticker']], f2_df['Company']))
-
-        # Merge all name maps
-        name_map = {**sp_map, **f1_map, **f2_map}
-        tickers = list(name_map.keys()) + CUSTOM_TICKERS
-        send_telegram_msg(f"✅ Loaded {len(tickers)} stocks. Analyzing performance...")
-    except Exception as e:
-        send_telegram_msg(f"⚠️ Metadata scrape failed: {e}")
-        return
-
-    batch_size = 50 # Smaller batches because we are pulling 1 year of data per stock
-    report_lines = []
+    w1 = calc_change(hist['Close'].iloc[-5]) if len(hist) > 5 else "N/A"
+    m1 = calc_change(hist['Close'].iloc[-21]) if len(hist) > 21 else "N/A"
+    y1 = calc_change(hist['Close'].iloc[0])
     
-    for i in range(0, len(tickers), batch_size):
-        batch = tickers[i:i + batch_size]
-        # Pull 1y of data for the whole batch
-        data = yf.download(batch, period="1y", group_by='ticker', threads=5, progress=False)
-        
-        for ticker in batch:
-            try:
-                hist = data[ticker]['Close'].dropna()
-                if len(hist) < 2: continue
-                
-                curr = hist.iloc[-1]
-                name = name_map.get(ticker, ticker)
-                
-                # Calculations
-                d1 = get_pct(curr, hist.iloc[-2] if len(hist) > 1 else 0)
-                w1 = get_pct(curr, hist.iloc[-5] if len(hist) > 5 else 0)
-                m1 = get_pct(curr, hist.iloc[-21] if len(hist) > 21 else 0)
-                m3 = get_pct(curr, hist.iloc[-63] if len(hist) > 63 else 0)
-                y1 = get_pct(curr, hist.iloc[0])
+    return w1, m1, y1, curr
 
-                line = (f"🏦 *{name}* ({ticker})\n"
-                        f"💰 Price: ${curr:.2f}\n"
-                        f"1D: {d1} | 1W: {w1} | 1M: {m1}\n"
-                        f"3M: {m3} | 1Y: {y1}\n")
-                report_lines.append(line)
-            except:
-                continue
-        
-        time.sleep(1) # Breath for Yahoo
+def run_morning_report():
+    report = ["🌅 **MORNING BRIEFING & NEWS**\n"]
+    
+    # 1. Market Data
+    report.append("📊 **Your Holdings**")
+    for ticker, name in WATCHLIST_A.items():
+        w1, m1, y1, price = get_performance(ticker)
+        report.append(f"*{name}* ({ticker}): ${price:.2f}\n1W: {w1} | 1M: {m1} | 1Y: {y1}\n")
+    
+    # 2. News Digest (Global Finance & Specific Holdings)
+    report.append("\n📰 **Market News Digest**")
+    news_items = []
+    # Check Google and IBM specifically + broad market
+    for t_str in ['GOOGL', 'IBM', 'AAPL', 'MSFT']:
+        t = yf.Ticker(t_str)
+        for n in t.news[:2]: # Top 2 stories per major ticker
+            news_items.append(f"• [{n['title']}]({n['link']})")
+    
+    report.append("\n".join(set(news_items[:8]))) # Limit to top 8 unique stories
+    send_msg("\n".join(report))
 
-    report_lines.sort()
-    final_report = "📊 **MASTER MARKET DASHBOARD**\n\n" + "\n".join(report_lines)
-    send_telegram_msg(final_report)
+def run_volatility_sniper():
+    """Checks for 2-10% moves within the last 10 minutes."""
+    all_tickers = {**WATCHLIST_A, **WATCHLIST_B}
+    for ticker, name in all_tickers.items():
+        try:
+            # Fetch 1-minute data for the last 30 mins
+            t = yf.Ticker(ticker)
+            hist = t.history(interval="1m", period="30m")
+            if len(hist) < 11: continue
+            
+            now_price = hist['Close'].iloc[-1]
+            ten_min_ago = hist['Close'].iloc[-11]
+            
+            change = ((now_price - ten_min_ago) / ten_min_ago) * 100
+            
+            if 2.0 <= abs(change) <= 10.0:
+                w1, m1, y1, _ = get_performance(ticker)
+                msg = (f"🚨 **FLASH MOVE ALERT**\n*{name}* moved {change:+.1f}% in 10 mins!\n\n"
+                       f"💰 Current: ${now_price:.2f}\n"
+                       f"📅 Context: 1W: {w1} | 1M: {m1} | 1Y: {y1}")
+                send_msg(msg)
+        except: continue
 
 if __name__ == "__main__":
-    run_market_analytics()
+    mode = sys.argv[1] if len(sys.argv) > 1 else "morning"
+    if mode == "morning":
+        run_morning_report()
+    else:
+        run_volatility_sniper()
