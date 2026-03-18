@@ -3,7 +3,7 @@ name: Financial Intelligence Bot
 on:
   schedule:
     # 1. Morning Briefing: 7:45 AM UK Time (Mon-Fri) - Keep this!
-    - cron: '45 7 * * 1-5'
+    - cron: '15 7 * * 1-5'
     
     # 2. Economy Sniper: Every 20 mins during active Market Hours (8 AM - 10 PM UK)
     # This reduces your daily runs from 288 down to about 42.
