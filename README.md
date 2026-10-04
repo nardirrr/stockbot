@@ -11,6 +11,11 @@ I wanted an automated, zero-friction delivery system that:
 
 - **Provides contextual direction at a glance:** Clearly highlights key indices, equities, and commodities prices before the morning commute, before markets open.
 
+## Core Capabilities
+- **Automated Market Polling:** Queries market data and equity metrics utilising `yfinance`.
+- **Data Transformation:** Cleans and formats raw time-series data using `pandas`.
+- **Scheduled Telegram Delivery:** Builds structured markdown alerts and pushes them directly to private chats or channels via the Telegram Bot API (`requests`).
+- **Secure Environment Management:** Isolates configuration, sensitive tokens, and chat IDs via `.env` environment variables.
 
 ## Tech Stack
 - **Language:** Python 3
@@ -31,7 +36,7 @@ This project is built to run 100% in the cloud. You do not need to install Pytho
 Fork the Repository Click the **Fork** button in the top-right corner of this repository (above **Insights** and **About** )to generate an identical copy under your personal GitHub profile. 
 
 ## Step 2: Customise Your Portfolio
- 1. In your forked repository, open `bot.py`. 
+1. In your forked repository, open `bot.py`. 
 
 2. Click the pencil icon to edit the file directly in your browser. 
 
@@ -73,13 +78,7 @@ Click Run workflow > Run workflow to perform an on-demand test run. Check your T
 
 **Trend calculations coming in the future**
 
-- **Summarise the underlying movement:** Delivers a concise data breakdown explaining **why** the movement occurred, allowing me to digest market conditions in 30 seconds while on the go.
-
-## Core Capabilities
-- **Automated Market Polling:** Queries market data and equity metrics utilising `yfinance`.
-- **Data Transformation:** Cleans and formats raw time-series data using `pandas`.
-- **Scheduled Telegram Delivery:** Builds structured markdown alerts and pushes them directly to private chats or channels via the Telegram Bot API (`requests`).
-- **Secure Environment Management:** Isolates configuration, sensitive tokens, and chat IDs via `.env` environment variables.
+**Summarise the underlying movement:** Delivers a concise data breakdown explaining **why** the movement occurred, allowing me to digest market conditions in 30 seconds while on the go.
 
 ## New Features Planned
  - **Email Push Notifications**
