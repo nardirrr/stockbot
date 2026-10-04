@@ -44,7 +44,11 @@ Fork the Repository Click the **Fork** button in the top-right corner of this re
 
 2. Click the pencil icon to edit the file directly in your browser. 
 
-3. Update the `PORTFOLIO` dictionary at the top with your desired ticker symbols from Yahoo Finance: ```python PORTFOLIO = { 'VWRP.L': 'Vanguard All-World ETF', 'VALL.L': 'Vanguard Global All-Cap', 'SGLN.L': 'Physical Gold ETC', 'AAPL': 'Apple Inc.' }
+3. Update the `PORTFOLIO` dictionary at the top with your desired ticker symbols from Yahoo Finance:
+
+**Example Portfolio Provided**
+
+```python PORTFOLIO = { 'VWRP.L': 'Vanguard All-World ETF', 'VALL.L': 'Vanguard Global All-Cap', 'SGLN.L': 'Physical Gold ETC', 'AAPL': 'Apple Inc.' }
 
 
 4. Commit / Save changes.
