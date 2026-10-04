@@ -36,7 +36,8 @@ I wanted an automated, zero-friction delivery system that:
 ## Setup & Deployment Guide 
 This project is built to run 100% in the cloud. You do not need to install Python, configure local virtual environments, or leave your computer powered on.
 
-## Step 1: Fork the Repository Click the **Fork** button in the top-right corner of this repository to generate an identical copy under your personal GitHub profile. 
+## Step 1: 
+Fork the Repository Click the **Fork** button in the top-right corner of this repository (above **Insights** and **About** )to generate an identical copy under your personal GitHub profile. 
 
 ## Step 2: Customise Your Portfolio
  1. In your forked repository, open `bot.py`. 
