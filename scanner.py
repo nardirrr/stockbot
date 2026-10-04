@@ -1,103 +1,106 @@
-import yfinance as yf
-import requests
-import pandas as pd
-from datetime import datetime
+import os
 import sys
+import requests
+import yfinance as yf
 
-# --- CONFIG ---
-TELEGRAM_BOT_TOKEN = '8742193604:AAFOFUr5qBgJYj-q9OpaqOcLxum0sk0TLA0' 
-TELEGRAM_CHAT_ID = '8334826606'
-
-WATCHLIST_A = {'GOOGL': 'Google', 'VWRP.L': 'All-World', 'SGLN.L': 'Gold', 'SSLN.L': 'Silver'}
-WATCHLIST_B = {
-    'AAPL': 'Apple', 'MSFT': 'Microsoft', 'NVDA': 'Nvidia', 'AMZN': 'Amazon', 
-    'META': 'Meta', 'TSLA': 'Tesla', 'TSM': 'TSMC', '005930.KS': 'Samsung', 
-    'BABA': 'Alibaba', 'IBM': 'IBM', 'RACE': 'Ferrari'
+# ==========================================
+# 1. PORTFOLIO CONFIGURATION
+# ==========================================
+# This dictionary maps Yahoo Finance ticker symbols to the names you want to see in Telegram.
+# The '.L' suffix denotes assets listed on the London Stock Exchange.
+# This is an EXAMPLE portfolio of holdings that some people might own. **PLEASE EDIT ACCORDINGLY**
+PORTFOLIO = {
+    'VWRP.L': 'Vanguard All-World ETF',
+    'VALL.L': 'Vanguard Global All-Cap',
+    'SGLN.L': 'Physical Gold ETC',
+    'AAPL': 'Apple Inc.'
 }
 
-def send_msg(text):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    requests.post(url, json={"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "Markdown", "disable_web_page_preview": True})
-
-def get_performance(ticker_str):
-    t = yf.Ticker(ticker_str)
-    hist = t.history(period="1y")
-    if hist.empty: return "N/A", "N/A", "N/A", 0
-    curr = hist['Close'].iloc[-1]
+def fetch_market_data() -> str:
+    """
+    Queries Yahoo Finance for the latest closing prices and formats them into a Markdown string.
+    """
+    # We build the message as a list of strings, which we will join together at the end.
+    lines = ["🌅 **Pre-Market Briefing**\n"]
     
-    def calc_change(past_val):
-        change = ((curr - past_val) / past_val) * 100
-        return f"{'🟢' if change >= 0 else '🔴'}{change:+.1f}%"
+    for symbol, name in PORTFOLIO.items():
+        try:
+            # yf.Ticker creates an object representing the asset.
+            ticker = yf.Ticker(symbol)
+            
+            # Why 5 days? Markets close on weekends and bank holidays. 
+            # If we only ask for "1d" on a Monday morning, the API might return empty data.
+            # Requesting 5 days guarantees we catch the most recent valid trading close.
+            hist = ticker.history(period="5d")
+            
+            if hist.empty:
+                lines.append(f"• *{name}*: Data unavailable")
+                continue
+                
+            # .iloc[-1] targets the last row in the pandas DataFrame (the most recent day).
+            # We specifically extract the 'Close' column value.
+            latest_close = hist['Close'].iloc[-1]
+            
+            # --- CURRENCY NORMALISATION LOGIC ---
+            # UK-listed assets (like VWRP or SGLN) are often quoted in Pence Sterling (GBX), not Pounds (GBP).
+            if symbol.endswith('.L'):
+                # If the price is over 1000 pence (e.g., £10.00), we divide by 100 to convert to GBP.
+                # This prevents your bot from telling you an ETF costs £12,000 instead of £120.00.
+                if latest_close > 1000:
+                    lines.append(f"• *{name}*: £{latest_close/100:.2f}")
+                else:
+                    lines.append(f"• *{name}*: £{latest_close:.2f}")
+            else:
+                # US equities (like AAPL) default to USD.
+                lines.append(f"• *{name}*: ${latest_close:.2f}")
+                
+        except Exception as e:
+            # If an individual ticker fails (e.g., Yahoo Finance API goes down), 
+            # the bot gracefully skips it rather than crashing the whole script.
+            lines.append(f"• *{name}*: Error fetching data")
+            
+    # Combines the list into a single string, with each item on a new line.
+    return "\n".join(lines)
 
-    w1 = calc_change(hist['Close'].iloc[-5]) if len(hist) > 5 else "N/A"
-    m1 = calc_change(hist['Close'].iloc[-21]) if len(hist) > 21 else "N/A"
-    y1 = calc_change(hist['Close'].iloc[0])
-    return w1, m1, y1, curr
-
-def run_morning_report():
-    report = ["🌅 **MORNING BRIEFING & NEWS**\n"]
-    report.append("📊 **Current Performance**")
-    for ticker, name in WATCHLIST_A.items():
-        w1, m1, y1, price = get_performance(ticker)
+def send_telegram_message(message: str) -> None:
+    """
+    Pushes the formatted text payload to the Telegram Bot API.
+    """
+    # os.getenv pulls your secure keys from the system environment.
+    # We never hardcode these in the file so they don't leak on GitHub.
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    
+    # Defensive programming: Stop immediately if the keys are missing.
+    if not bot_token or not chat_id:
+        print("Error: Telegram credentials not found in environment variables.")
+        sys.exit(1) # Exit code 1 tells the operating system/GitHub Actions that the script failed.
         
-        # --- FIXED CURRENCY LOGIC ---
-        if ticker in ['SGLN.L', 'SSLN.L']:
-            # These are in Pence (GBX), so divide by 100
-            display_price = f"£{price/100:.2f}"
-        elif ticker == 'VWRP.L':
-            # VWRP is already in Pounds (£) on Yahoo
-            display_price = f"£{price:.2f}"
-        else:
-            # Everything else (like Google) is USD ($)
-            display_price = f"${price:.2f}"
-            
-        report.append(f"*{name}*: {display_price}\n1W: {w1} | 1M: {m1} | 1Y: {y1}\n")
+    # The official Telegram API endpoint for sending text messages.
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     
-    # ... rest of your news code ...
-    news_links = []
-    for t_str in ['GOOGL', 'IBM', 'AAPL', 'MSFT']:
-        try:
-            stories = yf.Ticker(t_str).news
-            for n in stories[:2]:
-                title = n.get('title') or n.get('headline')
-                link = n.get('link')
-                if title and link:
-                    news_links.append(f"• [{title}]({link})")
-        except: continue
+    # The payload dictates where the message goes and how it looks.
+    # parse_mode="Markdown" allows the use of asterisks (*) for bold text in the report.
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown"
+    }
     
-    report.append("\n".join(list(set(news_links))[:8]))
-    send_msg("\n".join(report))
-
-def check_commands():
-    """Checks for /status command"""
     try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
-        data = requests.get(url).json()
-        if data.get("result"):
-            last_msg = data["result"][-1].get("message", {}).get("text", "")
-            if last_msg == "/status":
-                send_msg(f"✅ **E14 Bot Online**\nTime: {datetime.now().strftime('%H:%M:%S')}\nMonitoring Watchlist B...")
-    except: pass
+        # We send an HTTPS POST request. A timeout of 10 seconds prevents the script 
+        # from hanging forever if Telegram's servers are slow.
+        response = requests.post(url, json=payload, timeout=10)
+        
+        # raise_for_status() throws an error if Telegram rejects the message (e.g., wrong chat ID).
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print(f"Failed to send message: {e}")
+        sys.exit(1)
 
-def run_volatility_sniper():
-    check_commands()
-    all_tickers = {**WATCHLIST_A, **WATCHLIST_B}
-    for ticker, name in all_tickers.items():
-        try:
-            t = yf.Ticker(ticker)
-            hist = t.history(interval="1m", period="30m")
-            if len(hist) < 11: continue
-            now, then = hist['Close'].iloc[-1], hist['Close'].iloc[-11]
-            change = ((now - then) / then) * 100
-            
-            if 2.0 <= abs(change) <= 10.0:
-                w1, m1, y1, _ = get_performance(ticker)
-                send_msg(f"🚨 **FLASH MOVE**\n*{name}* moved {change:+.1f}% in 10 mins!\nContext: 1W: {w1} | 1M: {m1} | 1Y: {y1}")
-        except: continue
-
+# This block ensures the code only runs if the file is executed directly 
+# (e.g., `python bot.py`), rather than if it gets imported into another project.
 if __name__ == "__main__":
-    mode = sys.argv[1] if len(sys.argv) > 1 else "morning"
-    if mode == "morning":
-        run_morning_report()
-    else:
-        run_volatility_sniper()
+    report = fetch_market_data()
+    send_telegram_message(report)
+    print("Report dispatched successfully.")
