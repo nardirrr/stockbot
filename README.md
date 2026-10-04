@@ -61,7 +61,7 @@ Fork the Repository Click the **Fork** button in the top-right corner of this re
 
 3. Message @userinfobot “/start” to retrieve your numeric id .
 
-4 .Once you fork the repository, open it, navigate to **settings** > **Secrets and variables** > **Actions**.
+4. Once you fork the repository, open it, navigate to **settings** > **Secrets and variables** > **Actions**.
 
 5. Click New repository secret and create the following two secrets:
 
