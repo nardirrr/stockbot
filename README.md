@@ -48,7 +48,7 @@ Fork the Repository Click the **Fork** button in the top-right corner of this re
 
 **Example Portfolio Provided**
 
-```python PORTFOLIO = { 'VWRP.L': 'Vanguard All-World ETF', 'VALL.L': 'Vanguard Global All-Cap', 'SGLN.L': 'Physical Gold ETC', 'AAPL': 'Apple Inc.' }
+" ```python PORTFOLIO = { 'VWRP.L': 'Vanguard All-World ETF', 'VALL.L': 'Vanguard Global All-Cap', 'SGLN.L': 'Physical Gold ETC', 'AAPL': 'Apple Inc.' } "
 
 
 4. Commit / Save changes.
