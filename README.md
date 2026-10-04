@@ -55,19 +55,19 @@ Fork the Repository Click the **Fork** button in the top-right corner of this re
 
 ## Add Github Secrets ( Telegram info)
 
-Message @botfather on telegram to **create a bot** and get your **api token** (Botfather will provide instructions)
+1. Message @botfather on telegram to **create a bot** and get your **api token** (Botfather will provide instructions)
 
-Retrieve the bots username / ID and message it “/start” to initiate it.
+2. Retrieve the bots username / ID and message it “/start” to initiate it.
 
-Message @userinfobot “/start” to retrieve your numeric id .
+3. Message @userinfobot “/start” to retrieve your numeric id .
 
-Once you fork the repository, open it, navigate to **settings** > **Secrets and variables** > **Actions**.
+4 .Once you fork the repository, open it, navigate to **settings** > **Secrets and variables** > **Actions**.
 
-Click New repository secret and create the following two secrets:
+5. Click New repository secret and create the following two secrets:
 
-TELEGRAM_BOT_TOKEN: Your API token from BotFather. (Case Sensitive)
+ - TELEGRAM_BOT_TOKEN: Your API token from BotFather. (Case Sensitive)
 
-TELEGRAM_CHAT_ID: Your numeric Telegram chat ID. (Case Sensitive)
+ - TELEGRAM_CHAT_ID: Your numeric Telegram chat ID. (Case Sensitive)
 
  ## Enable Workflow & Test
 Click the Actions tab at the top of your repository.
