@@ -19,7 +19,9 @@ I wanted an automated, zero-friction delivery system that:
 
 ## Architecture & How It Works
 1. **Extraction:** The script queries asset symbols (indices, equities, or commodities) via Yahoo Finance endpoints. **Trigger** A GitHub Actions cron workflow spins up an isolated Ubuntu container Monday through Friday at 06:45 UTC (07:45 BST).
+
 2.**Extraction:** `bot.py` queries asset symbols via Yahoo Finance endpoints, requesting a 5-day rolling window to guarantee closing data over weekends and bank holidays. **Processing:** `pandas` calculates daily percentage changes and formats clean numerical outputs. The script inspects currency metadata, converts pence quotes into pounds where applicable, and formats values into clean Markdown text
+
 3. **Dispatch:** The payload is assembled into formatted Markdown and transmitted via an HTTPS POST request to Telegram's `sendMessage` endpoint.
 
 ## Setup & Deployment Guide 
