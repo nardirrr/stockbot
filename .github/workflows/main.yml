@@ -1,39 +1,35 @@
-name: Financial Intelligence Bot
+name: Pre-Market Telegram Briefing
 
 on:
   schedule:
-    # 1. Morning Briefing: 7:45 AM UK Time (Mon-Fri) - Keep this!
-    - cron: '15 7 * * 1-5'
-    
-    # 2. Economy Sniper: Every 20 mins during active Market Hours (8 AM - 10 PM UK)
-    # This reduces your daily runs from 288 down to about 42.
-    - cron: '*/20 8-22 * * 1-5'
-    
+    # Runs at 06:45 UTC = 07:45 BST (Monday - Friday)
+    - cron: '45 6 * * 1-5'
+  
+  # Adds a "Run workflow" button in GitHub so you can test it manually
   workflow_dispatch:
 
 jobs:
-  run-market-logic:
+  send-morning-report:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
-
+        
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-
+          python-version: '3.11'
+          cache: 'pip'
+          
       - name: Install Dependencies
-        # Only install what is absolutely needed to save precious seconds
-        run: pip install yfinance requests pandas
-
-      - name: Run Script
         run: |
-          if [[ "${{ github.event.schedule }}" == "45 7 * * 1-5" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            python scanner.py morning
-          else
-            python scanner.py sniper
-          fi
+          python -m pip install --upgrade pip
+          pip install yfinance requests pandas
+          
+      - name: Run Market Bot
+        # Securely injects the tokens from GitHub Secrets
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python bot.py
