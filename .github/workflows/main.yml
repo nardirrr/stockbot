@@ -3,7 +3,7 @@ name: Pre-Market Telegram Briefing
 on:
   schedule:
     # Runs at 06:45 UTC = 07:45 BST (Monday - Friday)
-    - cron: '55 13 * * 1-5'
+    - cron: '42 6 * * 1-5'
   
   # Adds a "Run workflow" button in GitHub so you can test it manually
   workflow_dispatch:
