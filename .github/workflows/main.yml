@@ -3,7 +3,7 @@ name: Pre-Market Telegram Briefing
 on:
   workflow_dispatch:
   schedule:
-    - cron: '45 6 * * 1-5'
+    - cron: '7 6 * * 1-5'
 
 jobs:
   send-morning-report:
