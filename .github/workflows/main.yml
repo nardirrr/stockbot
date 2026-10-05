@@ -3,7 +3,7 @@ name: Pre-Market Telegram Briefing
 on:
   schedule:
     # Runs at 06:45 UTC = 07:45 BST (Monday - Friday)
-    - cron: '00 17 * * 1-5'
+    - cron: '0 17 * * 1-5'
   
   workflow_dispatch:
 
