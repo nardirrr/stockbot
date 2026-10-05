@@ -3,9 +3,8 @@ name: Pre-Market Telegram Briefing
 on:
   schedule:
     # Runs at 06:45 UTC = 07:45 BST (Monday - Friday)
-    - cron: '42 6 * * 1-5'
+    - cron: '45 6 * * 1-5'
   
-  # Adds a "Run workflow" button in GitHub so you can test it manually
   workflow_dispatch:
 
 jobs:
@@ -20,7 +19,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
           
       - name: Install Dependencies
         run: |
@@ -28,7 +26,6 @@ jobs:
           pip install yfinance requests pandas
           
       - name: Run Market Bot
-        # Securely injects the tokens from GitHub Secrets
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
