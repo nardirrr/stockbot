@@ -76,6 +76,9 @@ Click Run workflow > Run workflow to perform an on-demand test run. Check your T
 
 ## Future Plans
 
+**Scheduling Fixes**
+ Due to the nature of GitHub's YAML, the execution timeframe for this bot isn't always accurate, sometimes by hours. One of the immediate fixes I aim to do, is fix the scheduling errors, in an accessible manner. 
+
 **Trend calculations coming in the future**
 
 **Summarise the underlying movement:** Delivers a concise data breakdown explaining **why** the movement occurred, allowing me to digest market conditions in 30 seconds while on the go.
